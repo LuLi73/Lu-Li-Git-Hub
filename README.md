@@ -9,7 +9,7 @@ Steps for the running the R code (Go to the "Rcode for Finding the Golden Rule" 
 - Finding Golen Rule and Model Checking (Golden Fule and Model Checking.R)
 
 ### Power Generation Project
-Steps for the running the R code (Go to the "PowerGenerationProject" Folder)
+Steps for the running the R code (Go to the "Rcode_for_PowerGenerationProject" Folder)
 - Assessing relationships between variables (Exploratory Data Anlaysis.R)
 - Checking the best link for fitting power generation data with flow data (Building the model.R)
 - Predicting future power generation using predicted future water flow (Time Series Predictions.R)
@@ -17,3 +17,7 @@ Steps for the running the R code (Go to the "PowerGenerationProject" Folder)
 ### UK Housing Price Prediction
 Go to HousingPricePrediction.ipynb
 
+### Bayesian Data Analysis Coursework (JAGS)
+Go to the Rcode_for_JAGS_Coursework folder
+- The two csv files contain the data 
+- The R code is in the JAGS_for_Bayesian_Data_Analysis.R file
