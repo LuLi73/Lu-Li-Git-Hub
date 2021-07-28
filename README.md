@@ -15,4 +15,5 @@ Steps for the running the R code (Go to the "PowerGenerationProject" Folder)
 - Predicting future power generation using predicted future water flow (Time Series Predictions.R)
 
 ### UK Housing Price Prediction
+Go to HousingPricePrediction.ipynb
 
