@@ -8,6 +8,16 @@ Steps for the running the R code (Go to the "Rcode for Finding the Golden Rule" 
 - Controlling for confound and assessing associations between CET items and aetiology (Kruskal Test and Multiple Group Estimation.R)
 - Finding Golen Rule and Model Checking (Golden Fule and Model Checking.R)
 
+### Bayesian Data Analysis Coursework (JAGS)
+Go to the Rcode_for_JAGS_Coursework folder
+- The two csv files contain the data 
+- The R code is in the JAGS_for_Bayesian_Data_Analysis.R file
+
+### Performing the Analysis on a Well
+Go to the Rcode_for_Performing_the_analysis_on_a_Well folder
+- The two csv files contain the data 
+- The R code is in the JAGS_for_Performing_the_Analysis_on_a_Well.Rmd file
+
 ### Power Generation Project
 Steps for the running the R code (Go to the "Rcode_for_PowerGenerationProject" Folder)
 - Assessing relationships between variables (Exploratory Data Anlaysis.R)
@@ -17,7 +27,6 @@ Steps for the running the R code (Go to the "Rcode_for_PowerGenerationProject" F
 ### UK Housing Price Prediction
 Go to HousingPricePrediction.ipynb
 
-### Bayesian Data Analysis Coursework (JAGS)
-Go to the Rcode_for_JAGS_Coursework folder
-- The two csv files contain the data 
-- The R code is in the JAGS_for_Bayesian_Data_Analysis.R file
+### Imputing Missing Values with Machine Learning
+Go to Imputing Missing Values with Machine Learning by Li Lu.ipynb
+_ The dataset can be found in Rcode_for_Performing_the_analysis_on_a_Well folder
