@@ -8,6 +8,11 @@ Steps for the running the R code (Go to the "Rcode for Finding the Golden Rule" 
 - Controlling for confound and assessing associations between CET items and aetiology (Kruskal Test and Multiple Group Estimation.R)
 - Finding Golen Rule and Model Checking (Golden Fule and Model Checking.R)
 
+### Forcasting for Electricity Demand from Mixed Buildings
+Go to the Rcode_for_Forcasting_for_Electricity_Demand_from_Mixed_Buildings folder
+- The csv file contains the data 
+- The R code is in the Forcasting_for_Electricity_Demand_from_Mixed_Buildings.R file
+
 ### Bayesian Data Analysis Coursework (JAGS)
 Go to the Rcode_for_JAGS_Coursework folder
 - The two csv files contain the data 
