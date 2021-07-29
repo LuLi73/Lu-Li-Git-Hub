@@ -1,0 +1,228 @@
+---
+title: "Performing the Analysis on a Well in the North Sea"
+author: "Li Lu"
+date: '2020-12-01'
+output: html_document
+---
+
+##Aim of the Project
+>The project aims at performing the analysis on a well in the North Sea. Firstly, we did an exploratory data analysis to find the relationships between different variables and find the monthly and daily patterns of oil rate, gas rate, and water rate. Then we filled in the missing data in the real-time data set. In addition, we made a prediction of the future real-time data and determine if the well is producing stably form the entire period of real-time data. Finally, we gave recommendations of the data collection to better understand the well.
+
+>The following is the library we used in the project.
+
+```{r , warning = FALSE, message = FALSE}
+library(ggcorrplot)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(forecast)
+library(zoo)
+```
+
+## Dataset
+>We had two datasets:the first one is real-time data covering a couple of years in the life of well and the second one is the simulated data from physics-based model of the well.
+
+```{r}
+realtime_data <- read.csv('/Users/lilu/Desktop/well_1_realtime_data.csv')
+model_data <- read.csv('/Users/lilu/Desktop/well_1_model_data.csv')
+```
+
+## Exploratory Data Analysis
+>First of all, we chose the real-time data whose oil rate, gas rate, and water rate are greater than 0, and removed NA value. After that, we got correlations between different variables. 
+
+```{r}
+real_data_flowing_with_rate <- realtime_data[ which(realtime_data$OilRateTested..STB.day. > 0
+                                             & realtime_data$GasRateTested..MMscf.day. > 0
+                                             & realtime_data$WaterRateTested..STB.day. > 0
+                                             ), ]
+real_data_flowing_with_rate <- real_data_flowing_with_rate[complete.cases(real_data_flowing_with_rate),]
+new_merg <- real_data_flowing_with_rate[,c(2:13)]
+pmat <- cor_pmat(new_merg)
+```
+
+>Then, we loaded the package and got heatmaps of the correlation as Figure 1. We calculated p-value for each item in the correlation matrix and set the threshold of p-value as 0.05. After barring the non significant coeffcients shown in Figure 1(b), we found that out of all the other variables, well head pressure, gauge pressure as well as gauge temparature have stronger correlation with oil rate (Correlation: -0.14, -0.12, -0.17 respectively) and gas rate (Correlation: -0.24, -0.21, -0.24 respectively). Moreover, the gas rate and oil rate are having quite a strong positive correlation (Correlation = 0.63). We also found that in general, the temperature variables have quite strong negative correlation with the pressure variables. However, we also saw that the flowline pressure variable was an exception and it has postive correlations with the temparature variables.
+
+```{r}
+library(ggcorrplot)
+ggcorrplot(round(cor(new_merg),2), hc.order = FALSE, type = "lower",
+           lab = TRUE,lab_size = 2)
+ggcorrplot(round(cor(new_merg),2), hc.order = FALSE, type = "lower",p.mat = pmat
+           )
+```
+
+>As for time patterns, we found that the oil rate in 2014 decreased from Jan to Apr, and then had an increase from Jun to Nov. In 2015, the oil rate was quite high from Jan to Aug, except for that in May, which had a sharp decrease and dropped to near 0. The gas rate time pattern had a similar trend as oil rate, but the water rate time pattern was different from the previous two.
+
+```{r}
+df1 <- cbind(real_data_flowing_with_rate, read.table(text = as.character(real_data_flowing_with_rate$time..time.), sep = " "))
+
+# Aggregate the data of the same date
+df1$time..time. <- NULL
+df1$V2 <- NULL
+agg_gen <- aggregate(. ~V1, data=df1, mean)
+
+# Change the date format from "%d/%m/%Y" to "%Y-%m-%d"
+agg_gen$V1 <- format(as.Date(agg_gen$V1, format = "%d/%m/%Y"), "%Y-%m-%d")
+gen11 <- agg_gen
+gen11$MonthN <- as.numeric(format(as.Date(gen11$V1),"%m")) # Month's number
+gen11$YearN <- as.numeric(format(as.Date(gen11$V1),"%Y"))
+gen11$Month  <- months(as.Date(gen11$V1), abbreviate=TRUE) # Month's abbr.
+Ref_oil <- gen11 %>%
+  group_by(MonthN,YearN, Month) %>%
+  summarize(OilRateTested..STB.day. = mean(OilRateTested..STB.day.)) %>%
+  ungroup() %>%
+  mutate(Month = factor(Month, levels = unique(Month)),
+         YearN = as.factor(YearN))
+
+z <- ggplot(data = Ref_oil, 
+            aes(x = Month, y =OilRateTested..STB.day., group = YearN, colour = YearN)) + 
+  geom_line() 
+
+z
+
+Ref_gas <- gen11 %>%
+  group_by(MonthN,YearN, Month) %>%
+  summarize(GasRateTested..MMscf.day. = mean(GasRateTested..MMscf.day.)) %>%
+  ungroup() %>%
+  mutate(Month = factor(Month, levels = unique(Month)),
+         YearN = as.factor(YearN))
+
+q <- ggplot(data = Ref_gas, 
+            aes(x = Month, y =GasRateTested..MMscf.day., group = YearN, colour = YearN)) + 
+  geom_line() 
+
+q
+
+
+Ref_water <- gen11 %>%
+  group_by(MonthN,YearN, Month) %>%
+  summarize(WaterRateTested..STB.day. = mean(WaterRateTested..STB.day.)) %>%
+  ungroup() %>%
+  mutate(Month = factor(Month, levels = unique(Month)),
+         YearN = as.factor(YearN))
+
+m <- ggplot(data = Ref_water, 
+            aes(x = Month, y =WaterRateTested..STB.day., group = YearN, colour = YearN)) + 
+  geom_line() 
+
+m
+```
+
+>We then classified data in different time period such as morning, evening and night. It should be noted that 5-11 is the morning, 11-16 is the afternoon, 16-19 is evening, and anything beyond that and up until 5 is night. We found that the oil rate, gas rate and water rate did not change much in different time periods. The code is as follows:
+
+```{r}
+df2 <- cbind(real_data_flowing_with_rate, read.table(text = as.character(real_data_flowing_with_rate$time..time.), sep = " "))
+df2$time..time. <- NULL
+df2$V1 <- NULL
+df2$V2 <- lapply(df2$V2, as.character)
+V3 <- df2$V2
+V3 <- paste0(V3, ":00")
+df2$V3 <- V3
+df2$V2 <- NULL
+tod <- cut(chron::times(df2$V3) , breaks = (1/24) * c(0,5,11,16,19,24))
+time_data <- c("night","morning","afternoon","evening","night")[as.numeric(tod)]
+time_data[is.na(time_data)] <- "night"
+comb_time_gen <- cbind(df2,time_data)
+theme_set(theme_classic())
+
+f <- ggplot(comb_time_gen, aes(time_data, OilRateTested..STB.day.))
+ff <- f + geom_boxplot(varwidth=T, fill="plum", outlier.shape = NA) + 
+  labs(subtitle="Oil Rate by Class of time",
+       x="Class of Time",
+       y="Oil Rate")
+ff
+
+g <- ggplot(comb_time_gen, aes(time_data, GasRateTested..MMscf.day.))
+gg <- g + geom_boxplot(varwidth=T, fill="plum", outlier.shape = NA) + 
+  labs(subtitle="Gas Rate by Class of time",
+       x="Class of Time",
+       y="Gas Rate")
+gg
+
+w <- ggplot(comb_time_gen, aes(time_data, WaterRateTested..STB.day.))
+ww <- w + geom_boxplot(varwidth=T, fill="plum", outlier.shape = NA) + 
+  labs(subtitle="Water Rate by Class of time",
+       x="Class of Time",
+       y="Water Rate")
+ww
+
+```
+
+>For machine learning, the larger the size of the dataset the better as this will make the machine learning model become more generalisable. Combining real data with simulated data can also help uncover the right patterns in the data. For example, there are some regions of the input space are not covered by the real data. In this case, we can use the model data to extend the real data such that it covers more, if not all regions, of the input space. However, when trying to extend data for machine learning, we also need to beware of the influence of simulated data on the machine learning model and make sure that the resulting model do not fit exactly to them.
+
+##Question 1: filling in missing data
+>For data imputation, the easiest way would be to use median imputation. Here, we were going to use the complete data for fitting linear regressions and then used the models to predict the missing values.
+
+```{r}
+imputation <- function(dataframe) {
+  columnindex <- is.na(colSums(dataframe))
+  columncompleteindex <- !is.na(colSums(dataframe))
+  completedata <- dataframe[complete.cases(dataframe),]
+  for (i in 1:dim(dataframe)[2]){
+    if (columnindex[[i]]==TRUE){
+      model <- lm(paste(colnames(dataframe[i]) , "~ ."), data = dataframe[complete.cases(dataframe),])
+      for (j in 1:dim(dataframe)[1]){
+        dataframe[j,i]<-ifelse(is.na(dataframe[j,i]),predict(model, data = dataframe[j,columncompleteindex]),dataframe[j,i])
+      }
+    }
+  }
+  return(dataframe)
+}
+```
+
+##Question 2: Prediction of the future value
+>We decided to use time series method to make the prediction. Let's see the oil rate first. Firstly, we aggregated the real-time data by date and changed the data to time series objects. Then we plotted the time series pattern and got the ACF and PACF, which indicated that we need to use ARIMA (Auto-regressive Integrated Moving Average) model. 
+
+```{r, warning=FALSE}
+real_data_flowing_with_rate2 <- real_data_flowing_with_rate
+df11 <- cbind(real_data_flowing_with_rate2, read.table(text = as.character(real_data_flowing_with_rate2$time..time.), sep = " "))
+df11$time..time. <- NULL
+df11$V2 <- NULL
+agg_gen1 <- aggregate(. ~V1, data=df11, mean)
+
+ZOO <- zoo(agg_gen1$OilRateTested..STB.day., order.by=as.Date(as.character(agg_gen1$V1), format='%d/%m/%Y'))
+time_seris <- ts(ZOO,frequency = 52)
+```
+
+```{r}
+plot(time_seris)
+acf(time_seris)
+pacf(time_seris)
+```
+
+>We directly applied R code to auto-fit the ARIMA model for our oil rate data and simulated data from the ARIMA model.
+
+```{r}
+fit_arima <- auto.arima(time_seris)
+refit <- Arima(time_seris, model=fit_arima)
+simulate(refit, nsim = 10, future = T)
+```
+
+>After checking the residuals and RMSE, conducting Ljung-Box Test, and plotting the prediction vs real data, we concluded that the model was quite good for prediction. We could predict the future value of other variables using the same methods.
+
+```{r}
+checkresiduals(fit_arima)
+Box.test(resid(fit_arima),type="Ljung",lag=20)
+accuracy(refit)
+plot(fitted(fit_arima),col="blue", ylab="Oil Rate") # plot prediction
+lines(time_seris,col="red")
+legend("topleft",c("Real Data","Prediction Data"),cex=.8,col=c("red","blue"),lty=1:2)
+```
+
+##Question 3: Determine the stability
+
+> The well stability status is only provided for the model data. So here, we fitted a logistic model based on the model data and then carried out the prediction on the real-time data. Although it was not known that whether 0s or 1s meant stable, we found that the sum of the number of ones was 65708, which was only about 60% of the whole data. Therefore, we could conclude that the well was not producing stably for the entire period of the real-time data.
+
+```{r, warning=FALSE}
+realdata_selectcolumns <- realtime_data[,c(3:6,12,11,13)]
+names(model_data)[1:7] <- colnames(realdata_selectcolumns)
+model=glm(formula= WellUnstable..0.1.~.,
+              data=model_data, family = binomial)
+predictedval <- predict(model, realdata_selectcolumns[complete.cases(realdata_selectcolumns),], type="response")
+fitted.result.wellstability<-ifelse(predictedval > 0.5,1, 0)
+sum(fitted.result.wellstability)
+```
+
+##Question 4: More Recommendations
+
+>Maybe it is better to give more information about the location of this well, for example, the temperature of the location, climate, etc. Then we can study the environment factor related to the rates of oil, gas, and water. In addition, it is better to have a data dictionary to give detailed explanation of the variables.
+
