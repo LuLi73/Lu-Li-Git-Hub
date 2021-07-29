@@ -21,7 +21,7 @@ Go to the Rcode_for_JAGS_Coursework folder
 ### Performing the Analysis on a Well
 Go to the Rcode_for_Performing_the_analysis_on_a_Well folder
 - The two csv files contain the data 
-- The R code is in the JAGS_for_Performing_the_Analysis_on_a_Well.Rmd file
+- The R code is in the Performing_the_Analysis_on_a_Well.Rmd file
 
 ### Power Generation Project
 Steps for the running the R code (Go to the "Rcode_for_PowerGenerationProject" Folder)
@@ -34,4 +34,4 @@ Go to HousingPricePrediction.ipynb
 
 ### Imputing Missing Values with Machine Learning
 Go to Imputing Missing Values with Machine Learning by Li Lu.ipynb
-_ The dataset can be found in Rcode_for_Performing_the_analysis_on_a_Well folder
+- The dataset can be found in Rcode_for_Performing_the_analysis_on_a_Well folder
